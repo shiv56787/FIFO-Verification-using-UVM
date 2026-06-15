@@ -1,0 +1,55 @@
+// FIFO Driver
+class fifo_driver extends uvm_driver #(fifo_seq_item);
+  `uvm_component_utils(fifo_driver)
+
+  // Virtual interface
+  virtual fifo_if vif;
+
+  function new(string name, uvm_component parent);
+    super.new(name, parent);
+  endfunction
+
+  // Get interface from config_db
+  function void build_phase(uvm_phase phase);
+    super.build_phase(phase);
+    if (!uvm_config_db #(virtual fifo_if)::get(this, "", "vif", vif))
+      `uvm_fatal("NO_VIF", "Virtual interface not found")
+  endfunction
+
+  // Main driver task
+  task run_phase(uvm_phase phase);
+    fifo_seq_item txn;
+
+    @(posedge vif.clk iff vif.rst_n);
+
+    forever begin
+      seq_item_port.get_next_item(txn);
+      drive_txn(txn);
+      seq_item_port.item_done();
+    end
+  endtask
+
+  // Drive transaction to DUT
+  task drive_txn(fifo_seq_item txn);
+
+    @(vif.driver_cb);
+    vif.driver_cb.wr_en <= txn.wr_en;
+    vif.driver_cb.rd_en <= txn.rd_en;
+    vif.driver_cb.din   <= txn.din;
+
+    // Capture response
+    @(vif.driver_cb);
+    txn.dout       = vif.driver_cb.dout;
+    txn.full       = vif.driver_cb.full;
+    txn.empty      = vif.driver_cb.empty;
+    txn.fifo_count = vif.driver_cb.fifo_count;
+
+    // Clear signals
+    vif.driver_cb.wr_en <= 0;
+    vif.driver_cb.rd_en <= 0;
+
+    `uvm_info("DRIVER", txn.convert2string(), UVM_HIGH)
+
+  endtask
+
+endclass
