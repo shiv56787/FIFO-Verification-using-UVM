@@ -1,0 +1,50 @@
+//  FIFO Monitor
+
+class fifo_monitor extends uvm_monitor;
+
+  `uvm_component_utils(fifo_monitor)
+
+  // Virtual Interface
+  virtual fifo_if vif;
+
+  // Analysis Port - Scoreboard/Coverage ko data bhejne ke liye
+  uvm_analysis_port #(fifo_seq_item) ap;
+
+  function new(string name, uvm_component parent);
+    super.new(name, parent);
+  endfunction
+
+  function void build_phase(uvm_phase phase);
+    super.build_phase(phase);
+    ap = new("ap", this);
+    if (!uvm_config_db #(virtual fifo_if)::get(this, "", "vif", vif))
+      `uvm_fatal("NO_VIF", "Monitor: virtual interface nahi mila")
+  endfunction
+
+  task run_phase(uvm_phase phase);
+    fifo_seq_item txn;
+
+    // Reset complete hone ka wait
+    @(posedge vif.clk iff vif.rst_n);
+
+    forever begin
+      @(vif.monitor_cb);
+
+      // Sirf active transactions capture karo
+      if (vif.monitor_cb.wr_en || vif.monitor_cb.rd_en) begin
+        txn            = fifo_seq_item::type_id::create("txn");
+        txn.wr_en      = vif.monitor_cb.wr_en;
+        txn.rd_en      = vif.monitor_cb.rd_en;
+        txn.din        = vif.monitor_cb.din;
+        txn.dout       = vif.monitor_cb.dout;
+        txn.full       = vif.monitor_cb.full;
+        txn.empty      = vif.monitor_cb.empty;
+        txn.fifo_count = vif.monitor_cb.fifo_count;
+
+        `uvm_info("MONITOR", txn.convert2string(), UVM_HIGH)
+        ap.write(txn);  // Scoreboard ko bhejo
+      end
+    end
+  endtask
+
+endclass
