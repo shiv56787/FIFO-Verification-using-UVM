@@ -1,6 +1,5 @@
-# FIFO-Verification-using-UVM
-Synchronous FIFO verification using UVM methodology in SystemVerilog — Driver, Monitor, Scoreboard, and 5 test sequences included.
- # FIFO Verification using UVM | SystemVerilog
+# FIFO-Verification-using-UVM | SystemVerilog
+Synchronous FIFO verification using UVM methodology in SystemVerilog — Driver, Monitor, Scoreboard, and 5 test sequences included
 
 ## Overview
 Parameterized synchronous FIFO (8-deep, 8-bit) with a complete 
